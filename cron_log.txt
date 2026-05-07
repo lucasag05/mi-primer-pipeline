@@ -1,0 +1,34 @@
+Fatal Python error: init_import_site: Failed to import the site module
+Python runtime state: initialized
+Traceback (most recent call last):
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/site.py", line 621, in <module>
+    main()
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/site.py", line 604, in main
+    known_paths = venv(known_paths)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/site.py", line 522, in venv
+    with open(virtual_conf, encoding='utf-8') as f:
+PermissionError: [Errno 1] Operation not permitted: '/Users/lucasgima/Desktop/mi-primer-pipeline/venv/pyvenv.cfg'
+/Users/lucasgima/Desktop/mi-primer-pipeline/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+DEBUG: Usuario detectado -> lucasgima
+
+✅ Conexión exitosa con la API
+💰 El precio actual de Bitcoin es: $79,812.00 USD
+
+💾 Precio guardado en la base de datos correctamente.
+/Users/lucasgima/Desktop/mi-primer-pipeline/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+DEBUG: Usuario detectado -> lucasgima
+
+✅ Conexión exitosa con la API
+💰 El precio actual de Bitcoin es: $79,886.00 USD
+
+💾 Precio guardado en la base de datos correctamente.
+/Users/lucasgima/Desktop/mi-primer-pipeline/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+DEBUG: Usuario detectado -> lucasgima
+
+✅ Conexión exitosa con la API
+💰 El precio actual de Bitcoin es: $79,909.00 USD
+
+💾 Precio guardado en la base de datos correctamente.
