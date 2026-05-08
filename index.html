@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BTC Price Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080808;
+      --surface:   #111111;
+      --border:    #1e1e1e;
+      --text:      #f0f0f0;
+      --muted:     #555;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --accent:    #f7931a; /* Bitcoin orange */
+      --radius:    16px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 24px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btc-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -1px;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Main card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 48px;
+      text-align: center;
+      min-width: 340px;
+    }
+
+    .price-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .price {
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1;
+      transition: color 0.3s;
+    }
+
+    .price.up   { color: var(--green); }
+    .price.down { color: var(--red);   }
+    .price.flat { color: var(--text);  }
+
+    /* ── Change badge ── */
+    .change-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .badge.up   { background: rgba(34,197,94,.15);  color: var(--green); }
+    .badge.down { background: rgba(239,68,68,.15);   color: var(--red);   }
+    .badge.flat { background: rgba(255,255,255,.06); color: var(--muted); }
+
+    .badge .arrow { font-size: 11px; }
+
+    .prev-price {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Sparkline chart ── */
+    .chart-wrap {
+      margin-top: 28px;
+      height: 60px;
+      position: relative;
+    }
+
+    canvas#sparkline {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      gap: 16px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    .dot.paused {
+      background: var(--muted);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
+    }
+
+    .last-update {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Pause button ── */
+    #toggleBtn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    #toggleBtn:hover {
+      background: var(--border);
+      border-color: #333;
+    }
+
+    #toggleBtn.paused {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #toggleBtn .btn-icon { font-size: 11px; }
+
+    /* ── History list ── */
+    .history-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 436px;   /* same as main card */
+      overflow: hidden;
+    }
+
+    .history-header {
+      padding: 14px 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #historyList {
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    #historyList::-webkit-scrollbar { width: 4px; }
+    #historyList::-webkit-scrollbar-track { background: transparent; }
+    #historyList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    #historyList li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn .3s ease;
+    }
+
+    #historyList li:last-child { border-bottom: none; }
+
+    .hist-time { color: var(--muted); font-size: 11px; }
+    .hist-price { font-weight: 600; }
+    .hist-change { font-size: 11px; font-weight: 500; }
+    .hist-change.up   { color: var(--green); }
+    .hist-change.down { color: var(--red);   }
+    .hist-change.flat { color: var(--muted); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* ── Interval selector ── */
+    .interval-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .interval-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .interval-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .interval-btn.active,
+    .interval-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="btc-icon">₿</div>
+    <h1>BTC Price Monitor</h1>
+  </header>
+
+  <!-- Main price card -->
+  <div class="card" style="max-width:436px; width:100%;">
+    <div class="price-label">Precio actual · USD</div>
+    <div class="price flat" id="priceDisplay">—</div>
+
+    <div class="change-row">
+      <span class="badge flat" id="changeBadge">
+        <span class="arrow" id="changeArrow">•</span>
+        <span id="changeAmt">—</span>
+      </span>
+      <span class="prev-price" id="prevPriceDisplay"></span>
+    </div>
+
+    <!-- Sparkline -->
+    <div class="chart-wrap">
+      <canvas id="sparkline"></canvas>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-indicator">
+        <div class="dot" id="dot"></div>
+        <span id="statusText">En vivo</span>
+      </div>
+
+      <div class="interval-row">
+        <span class="interval-label">Cada</span>
+        <button class="interval-btn active" data-sec="30"  id="i30">30s</button>
+        <button class="interval-btn"        data-sec="60"  id="i60">1m</button>
+        <button class="interval-btn"        data-sec="300" id="i300">5m</button>
+      </div>
+
+      <button id="toggleBtn">
+        <span class="btn-icon" id="btnIcon">⏸</span>
+        <span id="btnLabel">Pausar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- History card -->
+  <div class="history-card" style="max-width:436px; width:100%;">
+    <div class="history-header" id="historyHeader">Cargando historial…</div>
+    <ul id="historyList"></ul>
+  </div>
+
+  <!-- Error banner -->
+  <div id="errorBanner" style="display:none; align-items:center; gap:12px; background:#1a0a0a; border:1px solid #3a1010; border-radius:10px; padding:12px 18px; max-width:436px; width:100%;">
+    <span id="errorMsg" style="font-size:13px; color:#ef4444; flex:1;"></span>
+    <button id="retryBtn" style="background:none; border:1px solid #ef4444; color:#ef4444; border-radius:6px; padding:4px 12px; font-family:Inter,sans-serif; font-size:12px; cursor:pointer;">Reintentar</button>
+  </div>
+
+  <!-- Last update -->
+  <span class="last-update" id="lastUpdate">Esperando primera actualización…</span>
+
+  <script>
+    // ─── Estado ───────────────────────────────────────────────
+    const API_URL    = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
+    const DB_API_URL = 'http://localhost:5001/api/prices'; // servidor local Flask
+    let paused        = false;
+    let intervalSec   = 30;
+    let intervalId    = null;
+    let previousPrice = null;
+    let priceHistory  = [];   // [{ price, time }] — todos los puntos (DB + en vivo)
+    let retryTimeout  = null;
+    let retryCount    = 0;
+
+    // ─── Referencias DOM ──────────────────────────────────────
+    const priceEl      = document.getElementById('priceDisplay');
+    const badgeEl      = document.getElementById('changeBadge');
+    const arrowEl      = document.getElementById('changeArrow');
+    const changeEl     = document.getElementById('changeAmt');
+    const prevEl       = document.getElementById('prevPriceDisplay');
+    const dotEl        = document.getElementById('dot');
+    const statusEl     = document.getElementById('statusText');
+    const toggleBtn    = document.getElementById('toggleBtn');
+    const btnIcon      = document.getElementById('btnIcon');
+    const btnLabel     = document.getElementById('btnLabel');
+    const lastUpEl     = document.getElementById('lastUpdate');
+    const histList     = document.getElementById('historyList');
+    const canvas       = document.getElementById('sparkline');
+    const ctx          = canvas.getContext('2d');
+    const errorBanner  = document.getElementById('errorBanner');
+    const errorMsgEl   = document.getElementById('errorMsg');
+    const retryBtn     = document.getElementById('retryBtn');
+    const histHeader   = document.getElementById('historyHeader');
+
+    // ─── Mostrar / ocultar error ──────────────────────────────
+    function showError(msg) {
+      errorMsgEl.textContent = msg;
+      errorBanner.style.display = 'flex';
+      dotEl.classList.add('paused');
+      statusEl.textContent = 'Error';
+    }
+
+    function clearError() {
+      errorBanner.style.display = 'none';
+      if (!paused) dotEl.classList.remove('paused');
+    }
+
+    // ─── Retry con backoff exponencial ────────────────────────
+    // Espera: 10s → 20s → 40s → máximo 60s
+    function scheduleRetry() {
+      const delaySec = Math.min(10 * Math.pow(2, retryCount), 60);
+      retryCount++;
+      let remaining = delaySec;
+      statusEl.textContent = `Reintentando en ${remaining}s…`;
+      const tick = setInterval(() => {
+        remaining--;
+        if (remaining > 0) {
+          statusEl.textContent = `Reintentando en ${remaining}s…`;
+        } else {
+          clearInterval(tick);
+          fetchPrice();
+        }
+      }, 1000);
+    }
+
+    // ─── Fetch precio ─────────────────────────────────────────
+    async function fetchPrice() {
+      if (paused) return;
+      try {
+        const res = await fetch(API_URL);
+
+        // Rate limit: CoinGecko devuelve 429 si hacemos demasiadas peticiones seguidas
+        if (res.status === 429) {
+          showError('Demasiadas peticiones a CoinGecko (rate limit). Reintentando automáticamente…');
+          scheduleRetry();
+          return;
+        }
+
+        if (!res.ok) {
+          showError(`Error del servidor: HTTP ${res.status}. Reintentando…`);
+          scheduleRetry();
+          return;
+        }
+
+        const data  = await res.json();
+        const price = data?.bitcoin?.usd;
+
+        if (!price) {
+          showError('La API devolvió una respuesta inesperada.');
+          scheduleRetry();
+          return;
+        }
+
+        // Éxito: limpiamos el error y reseteamos el contador de retries
+        clearError();
+        retryCount = 0;
+        updateUI(price);
+
+      } catch (err) {
+        // Sin conexión a internet u otro error de red
+        showError('Sin conexión a internet. Reintentando automáticamente…');
+        scheduleRetry();
+        console.error(err);
+      }
+    }
+
+    // Botón manual de reintentar
+    retryBtn.addEventListener('click', () => {
+      retryCount = 0;
+      clearError();
+      fetchPrice();
+    });
+
+    // ─── Actualizar interfaz ──────────────────────────────────
+    function updateUI(price) {
+      const now  = new Date();
+      const diff = previousPrice !== null ? price - previousPrice : 0;
+      const dir  = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+
+      // Precio principal
+      priceEl.textContent = formatUSD(price);
+      priceEl.className   = `price ${dir}`;
+
+      // Badge de cambio
+      badgeEl.className   = `badge ${dir}`;
+      arrowEl.textContent = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '•';
+      changeEl.textContent = diff !== 0
+        ? `${diff > 0 ? '+' : ''}${formatUSD(diff)} (${formatPct(diff, previousPrice)})`
+        : previousPrice === null ? 'Primera lectura' : 'Sin cambio';
+
+      // Precio anterior
+      prevEl.textContent = previousPrice !== null
+        ? `ant: ${formatUSD(previousPrice)}`
+        : '';
+
+      // Agrega el nuevo punto al historial global (sin límite para mostrar toda la sesión)
+      priceHistory.push({ price, time: now });
+      drawSparkline();
+      // showDate=false: solo mostramos la hora para las actualizaciones en vivo
+      addHistoryRow(price, diff, dir, now, false);
+      histList.scrollTop = histList.scrollHeight;
+
+      // Status
+      lastUpEl.textContent = `Última actualización: ${timeStr(now)}`;
+      statusEl.textContent = 'En vivo';
+
+      previousPrice = price;
+    }
+
+    // ─── Sparkline ────────────────────────────────────────────
+    function drawSparkline() {
+      const W = canvas.parentElement.offsetWidth;
+      const H = 60;
+      canvas.width  = W * devicePixelRatio;
+      canvas.height = H * devicePixelRatio;
+      canvas.style.width  = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+
+      const pts = priceHistory;
+      if (pts.length < 2) return;
+
+      const min = Math.min(...pts.map(p => p.price));
+      const max = Math.max(...pts.map(p => p.price));
+      const range = max - min || 1;
+      const pad = 6;
+
+      // Color de la línea según tendencia global
+      const trend = pts[pts.length - 1].price >= pts[0].price ? '#22c55e' : '#ef4444';
+
+      const xOf = (i) => pad + (i / (pts.length - 1)) * (W - pad * 2);
+      const yOf = (p) => H - pad - ((p.price - min) / range) * (H - pad * 2);
+
+      // Área bajo la curva
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0,   trend + '33');
+      grad.addColorStop(1,   trend + '00');
+
+      ctx.beginPath();
+      ctx.moveTo(xOf(0), yOf(pts[0]));
+      pts.forEach((p, i) => { if (i > 0) ctx.lineTo(xOf(i), yOf(p)); });
+      ctx.lineTo(xOf(pts.length - 1), H);
+      ctx.lineTo(xOf(0), H);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Línea principal
+      ctx.beginPath();
+      ctx.moveTo(xOf(0), yOf(pts[0]));
+      pts.forEach((p, i) => { if (i > 0) ctx.lineTo(xOf(i), yOf(p)); });
+      ctx.strokeStyle = trend;
+      ctx.lineWidth   = 2;
+      ctx.lineJoin    = 'round';
+      ctx.stroke();
+
+      // Punto final
+      const lx = xOf(pts.length - 1);
+      const ly = yOf(pts[pts.length - 1]);
+      ctx.beginPath();
+      ctx.arc(lx, ly, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = trend;
+      ctx.fill();
+    }
+
+    // ─── Historial ────────────────────────────────────────────
+    // showDate=true para entradas de la DB (muestra fecha completa)
+    function addHistoryRow(price, diff, dir, time, showDate = false) {
+      const li = document.createElement('li');
+
+      const changeText = diff !== 0
+        ? `${diff > 0 ? '+' : ''}${formatUSD(diff)}`
+        : '—';
+
+      const timeLabel = showDate ? dateTimeStr(time) : timeStr(time);
+
+      li.innerHTML = `
+        <span class="hist-time">${timeLabel}</span>
+        <span class="hist-price">${formatUSD(price)}</span>
+        <span class="hist-change ${dir}">${changeText}</span>
+      `;
+
+      histList.appendChild(li); // append (no prepend) para respetar orden cronológico
+    }
+
+    // ─── Cargar historial desde la DB ─────────────────────────
+    async function loadHistory() {
+      try {
+        const res = await fetch(DB_API_URL);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rows = await res.json();
+
+        if (!Array.isArray(rows) || rows.length === 0) {
+          histHeader.textContent = 'Historial (sin datos en DB aún)';
+          return;
+        }
+
+        // Cargamos todos los puntos al sparkline
+        priceHistory = rows.map(r => ({
+          price: r.precio,
+          time:  new Date(r.timestamp)
+        }));
+
+        // Poblamos la lista de historial con todas las entradas de la DB
+        let prevP = null;
+        rows.forEach(r => {
+          const p    = r.precio;
+          const t    = new Date(r.timestamp);
+          const diff = prevP !== null ? p - prevP : 0;
+          const dir  = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+          addHistoryRow(p, diff, dir, t, true); // showDate=true
+          prevP = p;
+        });
+
+        // Scroll al fondo para ver los más recientes
+        histList.scrollTop = histList.scrollHeight;
+
+        // Actualizamos el precio anterior y dibujamos el sparkline
+        previousPrice = rows[rows.length - 1].precio;
+        drawSparkline();
+
+        const desde = dateStr(new Date(rows[0].timestamp));
+        histHeader.textContent = `Historial desde ${desde} (${rows.length} registros)`;
+
+      } catch (err) {
+        // Si el servidor no está corriendo, avisamos sin bloquear
+        histHeader.textContent = 'Historial (servidor local no disponible)';
+        console.warn('No se pudo cargar historial de DB:', err.message);
+      }
+    }
+
+    // ─── Pause / Resume ───────────────────────────────────────
+    toggleBtn.addEventListener('click', () => {
+      paused = !paused;
+
+      dotEl.classList.toggle('paused', paused);
+      toggleBtn.classList.toggle('paused', paused);
+      btnIcon.textContent  = paused ? '▶' : '⏸';
+      btnLabel.textContent = paused ? 'Reanudar' : 'Pausar';
+      statusEl.textContent = paused ? 'Pausado' : 'En vivo';
+
+      // Si reanudamos, hacemos fetch inmediato
+      if (!paused) fetchPrice();
+    });
+
+    // ─── Selector de intervalo ────────────────────────────────
+    document.querySelectorAll('.interval-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        intervalSec = Number(btn.dataset.sec);
+        restartInterval();
+      });
+    });
+
+    function restartInterval() {
+      clearInterval(intervalId);
+      intervalId = setInterval(fetchPrice, intervalSec * 1000);
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────
+    const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+    function formatUSD(n)          { return fmt.format(n); }
+    function formatPct(diff, base) { return base ? ((diff / base) * 100).toFixed(2) + '%' : ''; }
+    function timeStr(d)            { return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+    function dateStr(d)            { return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }); }
+    function dateTimeStr(d)        { return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+
+    // ─── Arranque ─────────────────────────────────────────────
+    // 1. Cargamos primero el historial de la DB
+    // 2. Luego arrancamos el polling en vivo de CoinGecko
+    loadHistory().then(() => {
+      fetchPrice();
+      restartInterval();
+    });
+    window.addEventListener('resize', drawSparkline);
+  </script>
+</body>
+</html>
